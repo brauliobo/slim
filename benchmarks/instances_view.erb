@@ -5,10 +5,10 @@
     <title>Simple Benchmark</title>
   </head>
   <body>
-    <h1><%= header %></h1>
-    <% unless item.empty? %>
+    <h1><%= @header %></h1>
+    <% unless @item.empty? %>
       <ul>
-      <% for i in item %>
+      <% for i in @item %>
         <% if i[:current] %>
           <li><strong><%= i[:name] %></strong></li>
         <% else %>

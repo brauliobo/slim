@@ -2,8 +2,9 @@
 
 $:.unshift(File.join(File.dirname(__FILE__), '..', 'lib'), File.dirname(__FILE__))
 
-require 'slim'
+require 'rails_controller'
 require 'context'
+require 'slim'
 
 require 'benchmark'
 require 'tilt'
@@ -16,9 +17,14 @@ class SlimBenchmarks
     @iterations = (iterations || 1000).to_i
     @benches    = []
 
-    @erb_code  = File.read(File.dirname(__FILE__) + '/view.erb')
-    @haml_code = File.read(File.dirname(__FILE__) + '/view.haml')
-    @slim_code = File.read(File.dirname(__FILE__) + '/view.slim')
+    @instances_view = File.dirname(__FILE__) + '/instances_view'
+    @view = File.dirname(__FILE__) + '/view'
+    # FIXME: should not be necessary if rails' handlers works
+    @view_slim = File.dirname(__FILE__) + '/view-slim'
+
+    @erb_code  = File.read("#{@view}.erb")
+    @haml_code = File.read("#{@view}.haml")
+    @slim_code = File.read("#{@view}.slim")
 
     init_compiled_benches
     init_tilt_benches
@@ -26,11 +32,13 @@ class SlimBenchmarks
   end
 
   def init_compiled_benches
-    erb         = ERB.new(@erb_code)
-    erubis      = Erubis::Eruby.new(@erb_code)
-    fast_erubis = Erubis::FastEruby.new(@erb_code)
-    haml_pretty = Haml::Engine.new(@haml_code, :format => :html5)
-    haml_ugly   = Haml::Engine.new(@haml_code, :format => :html5, :ugly => true)
+    erb          = ERB.new(@erb_code)
+    erubis       = Erubis::Eruby.new(@erb_code)
+    fast_erubis  = Erubis::FastEruby.new(@erb_code)
+    rails_erubis = ActionView::Template::Handlers::Erubis.new(@erb_code)
+    controller   = RailsController.new
+    haml_pretty  = Haml::Engine.new(@haml_code, :format => :html5)
+    haml_ugly    = Haml::Engine.new(@haml_code, :format => :html5, :ugly => true)
 
     context  = Context.new
 
@@ -39,20 +47,25 @@ class SlimBenchmarks
     context.instance_eval %{
       def run_erb; #{erb.src}; end
       def run_erubis; #{erubis.src}; end
-      def run_temple_erb; #{Temple::ERB::Engine.new.call @erb_code}; end
       def run_fast_erubis; #{fast_erubis.src}; end
+      def run_rails_erubis; #{rails_erubis.src}; end
+      def run_temple_erb; #{Temple::ERB::Engine.new.call @erb_code}; end
       def run_slim_pretty; #{Slim::Engine.new(:pretty => true).call @slim_code}; end
       def run_slim_ugly; #{Slim::Engine.new.call @slim_code}; end
     }
 
-    bench('(1) erb')         { context.run_erb }
-    bench('(1) erubis')      { context.run_erubis }
-    bench('(1) fast erubis') { context.run_fast_erubis }
-    bench('(1) temple erb')  { context.run_temple_erb }
-    bench('(1) slim pretty') { context.run_slim_pretty }
-    bench('(1) slim ugly')   { context.run_slim_ugly }
-    bench('(1) haml pretty') { context.run_haml_pretty }
-    bench('(1) haml ugly')   { context.run_haml_ugly }
+    bench('(1) erb')                       { context.run_erb }
+    bench('(1) erubis')                    { context.run_erubis }
+    bench('(1) fast erubis')               { context.run_fast_erubis }
+    bench('(1) rails erubis')              { context.run_erubis }
+    bench('(1) actionview locals erubis')  { controller.show_with_locals @view, context }
+    bench('(1) actionview vars erubis')    { controller.show_with_vars @instances_view, context }
+    bench('(1) temple erb')                { context.run_temple_erb }
+    bench('(1) slim pretty')               { context.run_slim_pretty }
+    bench('(1) slim ugly')                 { context.run_slim_ugly }
+    bench('(1) actionview locals slim')    { controller.show_with_locals @view_slim, context }
+    bench('(1) haml pretty')               { context.run_haml_pretty }
+    bench('(1) haml ugly')                 { context.run_haml_ugly }
   end
 
   def init_tilt_benches
