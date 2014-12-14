@@ -1,4 +1,7 @@
 class Context
+
+  attr_accessor :output_buffer
+
   def header
     'Colors'
   end
@@ -8,4 +11,5 @@ class Context
       { :name => 'green', :current => false, :url => '#green' },
       { :name => 'blue',  :current => false, :url => '#blue'  } ]
   end
+
 end

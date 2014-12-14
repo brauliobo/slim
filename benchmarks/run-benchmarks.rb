@@ -47,8 +47,8 @@ class SlimBenchmarks
     context.instance_eval %{
       def run_erb; #{erb.src}; end
       def run_erubis; #{erubis.src}; end
-      def run_fast_erubis; #{fast_erubis.src}; end
       def run_rails_erubis; #{rails_erubis.src}; end
+      def run_fast_erubis; #{fast_erubis.src}; end
       def run_temple_erb; #{Temple::ERB::Engine.new.call @erb_code}; end
       def run_slim_pretty; #{Slim::Engine.new(:pretty => true).call @slim_code}; end
       def run_slim_ugly; #{Slim::Engine.new.call @slim_code}; end
@@ -57,7 +57,7 @@ class SlimBenchmarks
     bench('(1) erb')                       { context.run_erb }
     bench('(1) erubis')                    { context.run_erubis }
     bench('(1) fast erubis')               { context.run_fast_erubis }
-    bench('(1) rails erubis')              { context.run_erubis }
+    bench('(1) rails erubis')              { context.run_rails_erubis }
     bench('(1) actionview locals erubis')  { controller.show_with_locals @view, context }
     bench('(1) actionview vars erubis')    { controller.show_with_vars @instances_view, context }
     bench('(1) temple erb')                { context.run_temple_erb }
